@@ -7,55 +7,61 @@ import {getPokemonIdByUrl} from '../../utils';
 import {Result} from '../types/pokemon-list';
 import {Pokemon} from '../types';
 
-interface Payload {
-  offset: number;
-  limit: number;
-}
+const usePokemonListController = () => {
+  const [offset, setOffset] = useState<number>(0);
+  const [limit, setLimit] = useState<number>(20);
 
-const usePokemonListController = (props: Payload) => {
-  const {offset, limit} = props;
   const {
     data: PokemonListData,
     isLoading,
     error,
+    refetch,
   } = useGetPokemonsQuery({
     offset: offset || 0,
-    limit: limit || 18,
+    limit: limit || 20,
   });
+
+  const results = PokemonListData?.results;
 
   const [fetchPokemonById] = useLazyGetPokemonByIdQuery();
 
   const [pokemons, setPokemons] = useState<Pokemon[] | any[]>([]);
 
   const getPokemonsById = async (results: Result[]) => {
-    const pokemons = results?.map(pokemon => {
-      const pokemonId = getPokemonIdByUrl(pokemon?.url);
+    const responses = await Promise.all(
+      results?.map(async result => {
+        const pokemonId = getPokemonIdByUrl(result?.url);
+        const res = await fetchPokemonById(pokemonId);
+        return res;
+      }),
+    );
 
-      const pokemonData = fetchPokemonById(pokemonId);
+    return responses;
+  };
 
-      return pokemonData;
-    });
+  const fetchPokemonData = async () => {
+    if (PokemonListData) {
+      const results = PokemonListData?.results;
+      const pokemonDataArray = await getPokemonsById(results);
 
-    return await Promise.all(pokemons);
+      const pokemons = pokemonDataArray?.map(item => item?.data);
+
+      setPokemons(prev => [...prev, ...pokemons]);
+    }
   };
 
   useEffect(() => {
-    const fetchPokemonData = async () => {
-      if (PokemonListData) {
-        const results = PokemonListData?.results;
-        const pokemonDataArray = await getPokemonsById(results);
-
-        const pokemons = pokemonDataArray?.map(item => item?.data);
-
-        setPokemons(pokemons);
-      }
-    };
-
     fetchPokemonData();
   }, [PokemonListData]);
 
+  const loadMore = () => {
+    setOffset(prevOffset => prevOffset + limit);
+  };
+
   return {
     pokemons,
+    loadMore,
+    results,
   };
 };
 
