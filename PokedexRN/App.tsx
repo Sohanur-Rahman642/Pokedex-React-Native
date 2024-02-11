@@ -10,7 +10,6 @@ import type {PropsWithChildren} from 'react';
 import {
   SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   useColorScheme,
@@ -28,7 +27,10 @@ import {
   LearnMoreLinks,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
-import PokemonView from './app/view/component/PokemonView';
+import {NavigationContainer} from '@react-navigation/native';
+import Routes from './app/navigation';
+import theme from './app/view/styles/theme';
+import {ThemeProvider} from 'styled-components';
 
 type SectionProps = PropsWithChildren<{
   title: string;
@@ -68,9 +70,13 @@ function App(): React.JSX.Element {
   };
 
   return (
-    <Provider store={store}>
-      <PokemonView />
-    </Provider>
+    <NavigationContainer>
+      <ThemeProvider theme={theme}>
+        <Provider store={store}>
+          <Routes />
+        </Provider>
+      </ThemeProvider>
+    </NavigationContainer>
   );
 }
 
